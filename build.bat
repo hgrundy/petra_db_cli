@@ -1,0 +1,1 @@
+"C:\Program Files (x86)\AutoIt3\Aut2Exe\Aut2Exe.exe" /in c:\dev\petra_db_cli\lc_petra_db.au3 /out c:\dev\petra_db_cli\lc_petra_db.exe /console

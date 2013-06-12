@@ -14,8 +14,14 @@
 ;       removed un-needed <Array> dependency
 ;       commented out cleanup() method. (it doesn't quite work--leaves .dlls)
 ;
+; COMPILE AS CONSOLE APP:
 
-#RequireAdmin
+; C:\Program Files (x86)\AutoIt3\Aut2Exe\Aut2Exe.exe /in lc_petra_db.au3 /out lc_petra_db.exe /console
+;
+; Note: adding RequireAdmin will allow this script to create the required registry entries, but will also force it to run as a separate console. Boo!
+
+;#RequireAdmin
+#AutoIt3Wrapper_Res_requestedExecutionLevel=requireAdministrator
 $catchError = ObjEvent("AutoIt.Error","WriteError") ; Initialize a COM error handler
 
 If $CmdLine[0] == 0 Then help()
@@ -23,6 +29,7 @@ If $CmdLine[1] == "/?" Then help()
 If $CmdLine[1] == "?" Then help()
 If $CmdLine[1] == "help" Then help()
 If $CmdLine[1] == "eula" Then eula()
+
 
 Global $version = $CmdLine[1] ; petra version 3 or 4
 
@@ -122,6 +129,11 @@ EndFunc
 ;----------
 ; 
 Func query()
+  Local $out = true;
+  If ($csv == "NO_CSV") Then
+    $out = false
+  EndIf
+
 
   $conn = ObjCreate("ADODB.Connection")
   
@@ -132,7 +144,7 @@ Func query()
 
   ElseIf (Number($version) == 4) Then
 
-    $dsn = "DRIVER={lc_petra_4_odbc};UID=" & $usr &";PWD=" & $pwd & ";ADDRESS=" & $srv & ";HOST=" & $srv & ";TYPE=REMOTE;DATABASE=" & $db & ";PORT=" & $prt & ";READONLY=TRUE;KEEPTABLESOPEN=FALSE;ROWLOCKPROTOCOL=PESSIMISTIC;"
+    $dsn = "DRIVER={lc_petra_4_odbc};UID=" & $usr &";PWD=" & $pwd & ";ADDRESS=" & $srv & ";HOST=" & $srv & ";TYPE=REMOTE;DATABASE=" & $db & ";PORT=" & $prt & ";READONLY=TRUE;KEEPTABLESOPEN=FALSE;ROWLOCKPROTOCOL=PESSIMISTIC;TIMEOUT=900;"
 
   EndIf    
   
@@ -144,7 +156,10 @@ Func query()
   $rs.Open($sql, $conn)
 
   If $rs.Fields.Count > 0 Then
-    FileOpen($csv,2)
+    If ($out) Then
+      FileOpen($csv,2)
+    EndIf
+
     $header = ""
     $iField = 0
 
@@ -157,7 +172,9 @@ Func query()
       EndIF
     Next
 
-    FileWriteLine($csv, $header) 
+    If ($out) Then
+      FileWriteLine($csv, $header) 
+    EndIf
     ;TODO maybe print dot via modulo?
     ConsoleWrite(".")
     ;ConsoleWrite("WRITE THIS --> " & $header & @CRLF)
@@ -176,21 +193,29 @@ Func query()
         EndIf
       Next
 
-      FileWriteLine($csv, $arow) 
-      ConsoleWrite(".")
-      ;ConsoleWrite("WRITE THIS --> " & $arow & @CRLF)
+      If ($out) Then
+        FileWriteLine($csv, $arow) 
+        ConsoleWrite(".")
+      Else
+        ConsoleWrite($arow & "|")
+      EndIf
 
       $rs.MoveNext
       $iRow += 1
       $count += 1
     WEnd
-    FileClose($csv)
+    If ($out) Then
+      FileClose($csv)
+    EndIf
   EndIf
  
   $rs.Close
   $conn.Close
-  If FileExists($csv) Then
-    ConsoleWrite(@CRLF & @CRLF & "Wrote "& $count &" CSV records: " & $csv & @CRLF & @CRLF)
+  
+  If ($out) Then
+    If (FileExists($csv)) Then
+      ConsoleWrite(@CRLF & @CRLF & "Wrote "& $count &" CSV records: " & $csv & @CRLF & @CRLF)
+    EndIf
   EndIf
 EndFunc
 
@@ -199,7 +224,9 @@ EndFunc
 ;
 Func csvify($s)
   $s = StringStripCR($s)                      ;strip carriage return
-  $s = StringRegExpReplace($s, """", """""")  ;quote quotes
+  ;$s = StringRegExpReplace($s, """", """""")  ;quote quotes
+  $s = StringRegExpReplace($s, """", "\\""")  ;escape internal quotes
+  $s = StringReplace($s, "|", ".")            ;replace pipes (used as delimiter)
   $s = StringStripWS($s, 3)                   ;strip left and right whitespace
   $s = """" & $s & """"                       ;enclose it in double quotes
   return $s
@@ -220,7 +247,8 @@ Func help()
   @CRLF & "              db -- for 3 use full path to DB folder; for 4 use database name" & _
   @CRLF & "             csv -- path to output CSV file" & _
   @CRLF & "             sql -- an ElevateDB or DBISAM SQL query string" & @CRLF & _
-  @CRLF & "[lc_petra_db.exe /? or ? for help. lc_petra_db.exe eula for legal.]" & _
+  @CRLF & "[lc_petra_db.exe /? or ? for help. lc_petra_db.exe eula for legal.]" & @CRLF & _
+  @CRLF & "[ Want stdout only? set csv = 'NO_CSV' and no file will be written ]" & @CRLF & _
   @CRLF & @CRLF & "Examples:" & @CRLF & _
   @CRLF & "lc_petra_db.exe 4 Administrator EDBDefault 192.168.1.12 12010 ""TEAPOT"" ""c:\temp\out.csv"" ""select * from well""" & @CRLF & _
   @CRLF & "lc_petra_db.exe 3 ""c:\Projects\TUTORIAL\DB"" ""c:\temp\out.csv"" ""select * from well""" & @CRLF
