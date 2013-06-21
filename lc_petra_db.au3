@@ -238,7 +238,7 @@ EndFunc
 Func help()
   $msg = "Query PETRA project databases using SQL and dump results to CSV file." & @CRLF & _
   @CRLF & "Syntax:" & @CRLF & _
-  @CRLF & "lc_petra_db.exe <version> <db> [usr] [pwd] [prt] <csv> <sql>" & @CRLF & _
+  @CRLF & "lc_petra_db.exe <version> <db> [usr] [pwd] [srv] [prt] <csv> <sql>" & @CRLF & _
   @CRLF & "         version -- 3 or 4" & _ 
   @CRLF & "   [v4 only] usr -- ElevateDB Server username" & _
   @CRLF & "   [v4 only] pwd -- ElevateDB Server password" & _
